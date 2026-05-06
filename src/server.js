@@ -8,7 +8,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.join(__dirname, "..", "public");
 const port = Number(process.env.PORT ?? 3000);
 const host = process.env.HOST ?? "127.0.0.1";
-const googleMapsApiKey = process.env.GOOGLE_MAPS_API_KEY ?? "";
 
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
@@ -78,12 +77,6 @@ const server = http.createServer(async (request, response) => {
   try {
     if (request.method === "GET" && pathname === "/api/meta") {
       return sendJson(response, 200, store.getMeta());
-    }
-
-    if (request.method === "GET" && pathname === "/api/config") {
-      return sendJson(response, 200, {
-        googleMapsApiKey,
-      });
     }
 
     if (request.method === "GET" && pathname === "/api/search") {

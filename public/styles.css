@@ -184,16 +184,6 @@ select:focus {
   background: linear-gradient(180deg, rgba(88, 147, 176, 0.12), rgba(255, 255, 255, 0.5));
 }
 
-.map-fallback {
-  min-height: 360px;
-  display: grid;
-  place-items: center;
-  text-align: center;
-  padding: 24px;
-  color: var(--muted);
-  line-height: 1.6;
-}
-
 .dot.green {
   background: var(--green);
 }
@@ -204,6 +194,15 @@ select:focus {
 
 .dot.user {
   background: var(--accent);
+}
+
+.leaflet-container {
+  font-family: var(--font-body);
+  background: #e9efe8;
+}
+
+.leaflet-control-attribution {
+  font-size: 0.68rem;
 }
 
 .map-pin {
@@ -226,12 +225,14 @@ select:focus {
   background: var(--accent);
 }
 
-.gm-style-iw-c {
-  border-radius: 18px !important;
+.leaflet-popup-content-wrapper {
+  border-radius: 18px;
+  box-shadow: var(--shadow);
 }
 
-.gm-style .gm-style-iw-d {
-  overflow: hidden !important;
+.leaflet-popup-content {
+  margin: 12px 14px;
+  color: var(--text);
 }
 
 .map-popup-title {

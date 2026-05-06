@@ -43,14 +43,6 @@ jobs:
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
-      - name: Inject app config
-        run: |
-          cat <<'EOF' > public/app-config.js
-          window.APP_CONFIG = {
-            googleMapsApiKey: "${{ secrets.GOOGLE_MAPS_API_KEY }}",
-          };
-          EOF
-
       - name: Disable Jekyll
         run: touch public/.nojekyll
 

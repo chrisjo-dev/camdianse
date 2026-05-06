@@ -25,7 +25,6 @@ const mapState = {
   userMarker: null,
   pharmacyMarkers: new Map(),
   radiusCircle: null,
-  infoWindow: null,
 };
 
 function statusClass(status) {
@@ -49,116 +48,39 @@ function productLabel(product) {
   return `${product.localBrandName} · ${product.dosageForm}`;
 }
 
-function renderMapFallback(message) {
-  mapView.innerHTML = `<div class="map-fallback">${message}</div>`;
-}
-
-function buildMapPin(status) {
-  return {
-    url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(
-      `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18"><circle cx="9" cy="9" r="7" fill="${
-        status === "green" ? "#1d8a54" : status === "yellow" ? "#db9d0c" : "#d8672b"
-      }" stroke="white" stroke-width="3"/></svg>`,
-    )}`,
-    scaledSize: new google.maps.Size(18, 18),
-    anchor: new google.maps.Point(9, 9),
-  };
-}
-
-async function loadGoogleMapsApi(apiKey) {
-  if (window.google?.maps?.importLibrary) {
+function ensureMap() {
+  if (mapState.map) {
     return;
   }
 
-  await new Promise((resolve, reject) => {
-    const existingScript = document.querySelector('script[data-google-maps-loader="true"]');
-    if (existingScript) {
-      existingScript.addEventListener("load", resolve, { once: true });
-      existingScript.addEventListener("error", () => reject(new Error("Google Maps failed to load.")), {
-        once: true,
-      });
-      return;
-    }
+  mapState.map = L.map(mapView, {
+    zoomControl: true,
+    scrollWheelZoom: true,
+  }).setView([appState.userLocation.lat, appState.userLocation.lng], 14);
 
-    const callbackName = `initGoogleMaps_${Date.now()}`;
-    window[callbackName] = () => {
-      resolve();
-      delete window[callbackName];
-    };
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  }).addTo(mapState.map);
 
-    const script = document.createElement("script");
-    script.src =
-      `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&v=weekly&loading=async&callback=${callbackName}`;
-    script.async = true;
-    script.defer = true;
-    script.dataset.googleMapsLoader = "true";
-    script.onerror = () => {
-      reject(new Error("Google Maps failed to load."));
-      delete window[callbackName];
-    };
-    document.head.append(script);
-  });
-}
+  mapState.userMarker = L.marker([appState.userLocation.lat, appState.userLocation.lng], {
+    icon: L.divIcon({
+      className: "",
+      html: '<div class="map-pin user"></div>',
+      iconSize: [18, 18],
+      iconAnchor: [9, 9],
+    }),
+  })
+    .addTo(mapState.map)
+    .bindPopup('<p class="map-popup-title">You are here</p><p class="map-popup-copy">Current search origin</p>');
 
-async function ensureMap() {
-  if (mapState.map) {
-    return true;
-  }
-
-  const googleMapsApiKey = window.APP_CONFIG?.googleMapsApiKey ?? "";
-  if (!googleMapsApiKey) {
-    renderMapFallback("Google Maps key is not configured for this static deployment yet.");
-    return false;
-  }
-
-  try {
-    await loadGoogleMapsApi(googleMapsApiKey);
-  } catch {
-    renderMapFallback("Google Maps could not load. Check the API key, referrer policy, and enabled Maps JavaScript API.");
-    return false;
-  }
-
-  mapState.map = new google.maps.Map(mapView, {
-    center: appState.userLocation,
-    zoom: 14,
-    mapTypeControl: false,
-    streetViewControl: false,
-    fullscreenControl: false,
-    clickableIcons: false,
-    gestureHandling: "greedy",
-  });
-
-  mapState.userMarker = new google.maps.Marker({
-    map: mapState.map,
-    position: appState.userLocation,
-    icon: buildMapPin("user"),
-    title: "You are here",
-  });
-
-  mapState.infoWindow = new google.maps.InfoWindow();
-
-  mapState.userMarker.addListener("click", () => {
-    mapState.infoWindow.setContent(
-      '<p class="map-popup-title">You are here</p><p class="map-popup-copy">Current search origin</p>',
-    );
-    mapState.infoWindow.open({
-      anchor: mapState.userMarker,
-      map: mapState.map,
-    });
-  });
-
-  mapState.radiusCircle = new google.maps.Circle({
-    map: mapState.map,
-    center: appState.userLocation,
+  mapState.radiusCircle = L.circle([appState.userLocation.lat, appState.userLocation.lng], {
     radius: Number(radiusSelect.value),
-    strokeColor: "#d8672b",
-    strokeOpacity: 0.8,
-    strokeWeight: 1.5,
+    color: "#d8672b",
+    weight: 1.5,
     fillColor: "#d8672b",
     fillOpacity: 0.08,
-  });
-
-  return true;
+  }).addTo(mapState.map);
 }
 
 function buildPharmacyPopup(pharmacy) {
@@ -177,15 +99,11 @@ function selectPharmacy(pharmacyId, payload) {
 
   const marker = mapState.pharmacyMarkers.get(pharmacyId);
   if (marker) {
-    mapState.infoWindow.setContent(buildPharmacyPopup(marker.pharmacyData));
-    mapState.infoWindow.open({
-      anchor: marker,
-      map: mapState.map,
+    marker.openPopup();
+    mapState.map.flyTo(marker.getLatLng(), Math.max(mapState.map.getZoom(), 15), {
+      animate: true,
+      duration: 0.6,
     });
-    mapState.map.panTo(marker.getPosition());
-    if (mapState.map.getZoom() < 15) {
-      mapState.map.setZoom(15);
-    }
   }
 }
 
@@ -248,53 +166,51 @@ function renderSearchResults(payload) {
   });
 }
 
-async function renderMap(pharmacies) {
-  const ready = await ensureMap();
-  if (!ready) {
-    return;
-  }
+function renderMap(pharmacies) {
+  ensureMap();
 
   mapState.radiusCircle.setRadius(Number(radiusSelect.value));
 
   for (const marker of mapState.pharmacyMarkers.values()) {
-    marker.setMap(null);
+    mapState.map.removeLayer(marker);
   }
   mapState.pharmacyMarkers.clear();
 
-  const bounds = new google.maps.LatLngBounds();
-  bounds.extend(appState.userLocation);
+  const bounds = L.latLngBounds([[appState.userLocation.lat, appState.userLocation.lng]]);
 
   pharmacies.forEach((pharmacy) => {
-    const marker = new google.maps.Marker({
-      map: mapState.map,
-      position: { lat: pharmacy.lat, lng: pharmacy.lng },
-      icon: buildMapPin(statusClass(pharmacy.stockStatus)),
-      title: pharmacy.pharmacyName,
-    });
+    const marker = L.marker([pharmacy.lat, pharmacy.lng], {
+      icon: L.divIcon({
+        className: "",
+        html: `<div class="map-pin ${statusClass(pharmacy.stockStatus)}"></div>`,
+        iconSize: [18, 18],
+        iconAnchor: [9, 9],
+      }),
+    })
+      .addTo(mapState.map)
+      .bindPopup(buildPharmacyPopup(pharmacy));
 
-    marker.pharmacyData = pharmacy;
-    marker.addListener("click", () => {
+    marker.on("click", () => {
       selectPharmacy(pharmacy.pharmacyId, { pharmacies });
     });
 
     mapState.pharmacyMarkers.set(pharmacy.pharmacyId, marker);
-    bounds.extend(marker.getPosition());
+    bounds.extend([pharmacy.lat, pharmacy.lng]);
   });
 
   if (pharmacies.length === 0) {
-    mapState.map.setCenter(appState.userLocation);
-    mapState.map.setZoom(14);
+    mapState.map.setView([appState.userLocation.lat, appState.userLocation.lng], 14);
     return;
   }
 
-  mapState.map.fitBounds(bounds, 80);
+  mapState.map.fitBounds(bounds.pad(0.28), { animate: true, duration: 0.5 });
 }
 
 function renderPharmacies(payload) {
   if (payload.pharmacies.length === 0) {
     pharmacyList.className = "pharmacy-list empty-state";
     pharmacyList.textContent = "No pharmacies with trusted same-day status were found in this radius.";
-    void renderMap([]);
+    renderMap([]);
     return;
   }
 
@@ -337,7 +253,7 @@ function renderPharmacies(payload) {
     )
     .join("");
 
-  void renderMap(payload.pharmacies);
+  renderMap(payload.pharmacies);
 
   pharmacyList.querySelectorAll("[data-select-pharmacy]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -466,7 +382,7 @@ searchInput.addEventListener("keydown", (event) => {
 });
 radiusSelect.addEventListener("change", loadNearbyPharmacies);
 
-void ensureMap();
+ensureMap();
 renderInquiry();
 void refreshInquiry();
 void refreshNotifications();
