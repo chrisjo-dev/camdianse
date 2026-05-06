@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pharmacist Console</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="shell pharmacist-shell">
+      <section class="hero compact">
+        <div>
+          <p class="eyebrow">Pharmacy operations</p>
+          <h1>Daily inventory and inquiry console</h1>
+          <p class="lede">Update medicine status once a day and respond to incoming pickup inquiries.</p>
+        </div>
+        <a class="secondary-link" href="/">Open user app</a>
+      </section>
+
+      <section class="panel pharmacist-topbar">
+        <label class="label" for="pharmacy-select">Pharmacy</label>
+        <div class="search-row">
+          <select id="pharmacy-select" class="search-input"></select>
+          <span id="pharmacist-badge" class="badge">0 new inquiries</span>
+        </div>
+      </section>
+
+      <section class="workspace">
+        <div class="panel profile-panel">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Profile</p>
+              <h2>Store information</h2>
+            </div>
+          </div>
+          <form id="profile-form" class="stack">
+            <label class="label">Store name<input id="profile-name" class="search-input" required /></label>
+            <label class="label">Address<input id="profile-address" class="search-input" required /></label>
+            <label class="label">Hours<input id="profile-hours" class="search-input" required /></label>
+            <button class="primary-button" type="submit">Save profile</button>
+          </form>
+        </div>
+
+        <div class="panel inventory-panel">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Inventory</p>
+              <h2>Daily stock status</h2>
+            </div>
+          </div>
+          <div id="inventory-table" class="inventory-table"></div>
+        </div>
+      </section>
+
+      <section class="workspace">
+        <div class="panel inquiry-queue-panel">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Inquiries</p>
+              <h2>Incoming queue</h2>
+            </div>
+          </div>
+          <div id="inquiry-queue" class="stack"></div>
+        </div>
+
+        <div class="panel notifications-panel">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Alerts</p>
+              <h2>Recent updates</h2>
+            </div>
+          </div>
+          <div id="pharmacist-notifications" class="stack"></div>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="/pharmacist.js"></script>
+  </body>
+</html>

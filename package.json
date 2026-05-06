@@ -1,0 +1,10 @@
+{
+  "name": "cambodia-pharmacy-finder-mvp",
+  "version": "1.0.0",
+  "description": "Phnom Penh-first Cambodia pharmacy finder MVP",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test"
+  }
+}

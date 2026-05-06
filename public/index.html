@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cambodia Pharmacy Finder</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">Phnom Penh medicine pickup</p>
+          <h1>Find nearby pharmacies carrying the medicine you need.</h1>
+          <p class="lede">
+            Search by ingredient or brand name, compare real-time pharmacy status, and send a pickup
+            inquiry in one flow.
+          </p>
+        </div>
+        <a class="secondary-link" href="/pharmacist">Open pharmacist console</a>
+      </section>
+
+      <section class="panel search-panel">
+        <label class="label" for="search-input">Search ingredient or medicine</label>
+        <div class="search-row">
+          <input
+            id="search-input"
+            class="search-input"
+            type="search"
+            placeholder="Try Acetaminophen, Panadol, Tylenol..."
+            autocomplete="off"
+          />
+          <button id="search-button" class="primary-button" type="button">Search</button>
+        </div>
+        <div id="search-results" class="search-results" aria-live="polite"></div>
+      </section>
+
+      <section class="workspace">
+        <div class="panel map-panel">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Nearby pharmacies</p>
+              <h2>Map</h2>
+            </div>
+            <label class="radius-control">
+              Radius
+              <select id="radius-select">
+                <option value="1000">1 km</option>
+                <option value="2000">2 km</option>
+                <option value="3000">3 km</option>
+              </select>
+            </label>
+          </div>
+          <div id="map-view" class="map-view"></div>
+          <div class="legend">
+            <span><i class="dot green"></i>In stock</span>
+            <span><i class="dot yellow"></i>Check with pharmacist</span>
+            <span><i class="dot user"></i>Your location</span>
+          </div>
+        </div>
+
+        <div class="panel detail-panel">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Selection</p>
+              <h2 id="selected-product-title">Choose a product to begin</h2>
+            </div>
+          </div>
+          <div id="pharmacy-list" class="pharmacy-list empty-state">
+            Search and select a medicine to see nearby pharmacies.
+          </div>
+        </div>
+      </section>
+
+      <section class="panel inquiry-panel">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">Inquiry status</p>
+            <h2>Pickup request</h2>
+          </div>
+          <span id="notification-badge" class="badge">0 updates</span>
+        </div>
+        <div id="inquiry-status" class="empty-state">
+          Select a pharmacy and send an inquiry to start tracking pickup readiness.
+        </div>
+      </section>
+    </main>
+    <script type="module" src="/user.js"></script>
+  </body>
+</html>
