@@ -1,3 +1,5 @@
+import { request } from "./app-store.js";
+
 const appState = {
   selectedProduct: null,
   selectedPharmacyId: null,
@@ -23,8 +25,7 @@ const mapState = {
   userMarker: null,
   pharmacyMarkers: new Map(),
   radiusCircle: null,
-  config: null,
-  apiReady: false,
+  infoWindow: null,
 };
 
 function statusClass(status) {
@@ -33,20 +34,6 @@ function statusClass(status) {
 
 function formatDistance(meters) {
   return meters >= 1000 ? `${(meters / 1000).toFixed(2)} km` : `${Math.round(meters)} m`;
-}
-
-async function request(url, options) {
-  const response = await fetch(url, {
-    headers: { "content-type": "application/json" },
-    ...options,
-  });
-
-  const payload = await response.json();
-  if (!response.ok) {
-    throw new Error(payload.error ?? "Request failed");
-  }
-
-  return payload;
 }
 
 function escapeHtml(value) {
@@ -118,18 +105,15 @@ async function ensureMap() {
     return true;
   }
 
-  if (!mapState.config) {
-    mapState.config = await request("/api/config");
-  }
-
-  if (!mapState.config.googleMapsApiKey) {
-    renderMapFallback("Add `GOOGLE_MAPS_API_KEY` to run the live Google map in this view.");
+  const googleMapsApiKey = window.APP_CONFIG?.googleMapsApiKey ?? "";
+  if (!googleMapsApiKey) {
+    renderMapFallback("Google Maps key is not configured for this static deployment yet.");
     return false;
   }
 
   try {
-    await loadGoogleMapsApi(mapState.config.googleMapsApiKey);
-  } catch (error) {
+    await loadGoogleMapsApi(googleMapsApiKey);
+  } catch {
     renderMapFallback("Google Maps could not load. Check the API key, referrer policy, and enabled Maps JavaScript API.");
     return false;
   }
@@ -151,12 +135,13 @@ async function ensureMap() {
     title: "You are here",
   });
 
-  mapState.userInfoWindow = new google.maps.InfoWindow({
-    content: '<p class="map-popup-title">You are here</p><p class="map-popup-copy">Current search origin</p>',
-  });
+  mapState.infoWindow = new google.maps.InfoWindow();
 
   mapState.userMarker.addListener("click", () => {
-    mapState.userInfoWindow.open({
+    mapState.infoWindow.setContent(
+      '<p class="map-popup-title">You are here</p><p class="map-popup-copy">Current search origin</p>',
+    );
+    mapState.infoWindow.open({
       anchor: mapState.userMarker,
       map: mapState.map,
     });
@@ -173,7 +158,6 @@ async function ensureMap() {
     fillOpacity: 0.08,
   });
 
-  mapState.apiReady = true;
   return true;
 }
 
@@ -193,7 +177,8 @@ function selectPharmacy(pharmacyId, payload) {
 
   const marker = mapState.pharmacyMarkers.get(pharmacyId);
   if (marker) {
-    marker.infoWindow.open({
+    mapState.infoWindow.setContent(buildPharmacyPopup(marker.pharmacyData));
+    mapState.infoWindow.open({
       anchor: marker,
       map: mapState.map,
     });
@@ -287,10 +272,7 @@ async function renderMap(pharmacies) {
       title: pharmacy.pharmacyName,
     });
 
-    marker.infoWindow = new google.maps.InfoWindow({
-      content: buildPharmacyPopup(pharmacy),
-    });
-
+    marker.pharmacyData = pharmacy;
     marker.addListener("click", () => {
       selectPharmacy(pharmacy.pharmacyId, { pharmacies });
     });
@@ -486,9 +468,9 @@ radiusSelect.addEventListener("change", loadNearbyPharmacies);
 
 void ensureMap();
 renderInquiry();
-refreshInquiry();
-refreshNotifications();
+void refreshInquiry();
+void refreshNotifications();
 setInterval(() => {
-  refreshInquiry();
-  refreshNotifications();
+  void refreshInquiry();
+  void refreshNotifications();
 }, 8000);

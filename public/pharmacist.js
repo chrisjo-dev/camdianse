@@ -1,3 +1,5 @@
+import { request, resetDemoStore } from "./app-store.js";
+
 const pharmacySelect = document.querySelector("#pharmacy-select");
 const pharmacistBadge = document.querySelector("#pharmacist-badge");
 const inventoryTable = document.querySelector("#inventory-table");
@@ -18,23 +20,8 @@ pharmacySelect.innerHTML = pharmacyOptions
   .map((option) => `<option value="${option.id}">${option.label}</option>`)
   .join("");
 
-async function request(url, options) {
-  const response = await fetch(url, {
-    headers: { "content-type": "application/json" },
-    ...options,
-  });
-
-  const payload = await response.json();
-  if (!response.ok) {
-    throw new Error(payload.error ?? "Request failed");
-  }
-
-  return payload;
-}
-
 function statusButtonMarkup(productId, currentStatus, nextStatus) {
-  const activeClass =
-    currentStatus === nextStatus ? `active-${nextStatus.toLowerCase()}` : "";
+  const activeClass = currentStatus === nextStatus ? `active-${nextStatus.toLowerCase()}` : "";
   return `
     <button class="status-button ${activeClass}" type="button" data-product-id="${productId}" data-status="${nextStatus}">
       ${nextStatus}
@@ -89,9 +76,7 @@ async function loadInventory() {
 
 function renderInquiryActions(inquiry) {
   if (inquiry.status === "NEW") {
-    return `
-      <button class="chip-button" type="button" data-inquiry-id="${inquiry.id}" data-next-status="CHECKING">Start checking</button>
-    `;
+    return '<button class="chip-button" type="button" data-inquiry-id="' + inquiry.id + '" data-next-status="CHECKING">Start checking</button>';
   }
 
   if (inquiry.status === "CHECKING") {
@@ -175,5 +160,13 @@ pharmacySelect.addEventListener("change", async () => {
   await Promise.all([loadProfile(), loadInventory(), loadDashboard()]);
 });
 
+window.resetCamdianseDemo = async () => {
+  resetDemoStore();
+  localStorage.removeItem("inquiryId");
+  await Promise.all([loadProfile(), loadInventory(), loadDashboard()]);
+};
+
 await Promise.all([loadProfile(), loadInventory(), loadDashboard()]);
-setInterval(loadDashboard, 8000);
+setInterval(() => {
+  void loadDashboard();
+}, 8000);
